@@ -112,7 +112,7 @@ export class World {
         });
     }
 
-    computeFaces() {
+    getFacesW() {
         this.facesToRender = [];
 
         this.instances.forEach(instance => {
@@ -137,7 +137,7 @@ export class World {
     render() {
         if (this.currentCamera != null) {
             this.currentCamera.updateMatrix();
-            this.computeFaces();
+            this.getFacesW();
             this.renderFaces();
         }
     }
@@ -314,16 +314,19 @@ export class Vertex {
 
         this.w = projectedVertex[2];
 
-        projectedVertex[0] /= projectedVertex[2];
-        projectedVertex[1] /= projectedVertex[2];
+        let x = projectedVertex[0];
+        let y = projectedVertex[1];
 
         if (this.w > -camera.frustumPlanes.near) {
-            projectedVertex[0] = -projectedVertex[0];
-            projectedVertex[1] = -projectedVertex[1];
+            x /= -this.w;
+            y /= -this.w;
+        } else {
+            x /= this.w;
+            y /= this.w;
         }
 
-        let canvasX = (projectedVertex[0] + 1) * 0.5 * camera.canvas.clientWidth;
-        let canvasY = (1 - projectedVertex[1]) * 0.5 * camera.canvas.clientHeight;
+        let canvasX = (x + 1) * 0.5 * camera.canvas.clientWidth;
+        let canvasY = (1 - y) * 0.5 * camera.canvas.clientHeight;
 
         this.vec2Position = new Vector2(canvasX, canvasY);
 
