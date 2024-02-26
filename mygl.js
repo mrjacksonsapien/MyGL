@@ -112,7 +112,7 @@ export class World {
         });
     }
 
-    renderFaces() {
+    computeFaces() {
         this.facesToRender = [];
 
         this.instances.forEach(instance => {
@@ -126,7 +126,9 @@ export class World {
         });
 
         this.facesToRender.sort((a, b) => a.wAverage - b.wAverage);
+    }
 
+    renderFaces() {
         this.facesToRender.forEach(face => {
             face.render(this.ctx);
         });
@@ -135,6 +137,7 @@ export class World {
     render() {
         if (this.currentCamera != null) {
             this.currentCamera.updateMatrix();
+            this.computeFaces();
             this.renderFaces();
         }
     }
@@ -306,14 +309,13 @@ export class Vertex {
         let projectedVertex = [
             vertex[0] * matrix[0][0] + vertex[1] * matrix[1][0] + vertex[2] * matrix[2][0] + vertex[3] * matrix[3][0],
             vertex[0] * matrix[0][1] + vertex[1] * matrix[1][1] + vertex[2] * matrix[2][1] + vertex[3] * matrix[3][1],
-            vertex[0] * matrix[0][2] + vertex[1] * matrix[1][2] + vertex[2] * matrix[2][2] + vertex[3] * matrix[3][2],
             vertex[0] * matrix[0][3] + vertex[1] * matrix[1][3] + vertex[2] * matrix[2][3] + vertex[3] * matrix[3][3],
         ];
 
-        this.w = projectedVertex[3];
+        this.w = projectedVertex[2];
 
-        projectedVertex[0] /= projectedVertex[3];
-        projectedVertex[1] /= projectedVertex[3];
+        projectedVertex[0] /= projectedVertex[2];
+        projectedVertex[1] /= projectedVertex[2];
 
         if (this.w > -camera.frustumPlanes.near) {
             projectedVertex[0] = -projectedVertex[0];

@@ -11,8 +11,8 @@ let camera1 = new mygl.Camera(
     0,
     20,
     70,
-    new mygl.Vector3(0, 0, 0),
-    new mygl.Vector3(0, 0, 0),
+    new mygl.Vector3(-4.5, 2.5, -0.5),
+    new mygl.Vector3(-25, -45, 0),
     0.015,
 );
 
@@ -131,8 +131,16 @@ function cameraOrientationReassignment() {
     if (currentCamera.orientation.z < 0) {
         currentCamera.orientation.z = 360 + currentCamera.orientation.z;
     }
+
+    /*
+    console.log(currentCamera.position);
+    console.log(currentCamera.orientation);
+    */
 }
 
 // Assets
 let cube1 = new mygl.Cube(new mygl.Vector3(0, 0, 2), new mygl.Vector3(1, 1, 1));
+let cube2 = new mygl.Cube(new mygl.Vector3(2, 0, 4), new mygl.Vector3(1, 1, 1));
+
 world.addToWorld(cube1);
+world.addToWorld(cube2);
