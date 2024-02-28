@@ -5,6 +5,12 @@ export class MyGLMath {
     static cot(degrees) {
         return 1 / Math.tan(MyGLMath.degToRad(degrees));
     }
+    static vec2Distance(vector1, vector2) {
+        return Math.sqrt(Math.pow(vector2.x - vector1.x, 2) + Math.pow(vector2.y - vector1.y, 2));
+    }
+    static vec3Distance(vector1, vector2) {
+        return Math.sqrt(Math.pow(vector2.x - vector1.x, 2) + Math.pow(vector2.y - vector1.y, 2) + Math.pow(vector2.z - vector1.z, 2));
+    }
 }
 
 export class Matrix {
@@ -112,32 +118,39 @@ export class World {
         });
     }
 
-    getFacesW() {
+    getFacesAverages() {
         this.facesToRender = [];
 
         this.instances.forEach(instance => {
             instance.render(this.currentCamera);
 
             instance.faces.forEach(face => {
-                if (face.wAverage != null) {
+                if (face.readyForRendering) {
                     this.facesToRender.push(face);
                 }
             });
         });
 
-        this.facesToRender.sort((a, b) => a.wAverage - b.wAverage);
+        this.facesToRender.sort((a, b) => {
+            return a.vec3DistanceFromCamera - b.vec3DistanceFromCamera;
+        });
     }
 
     renderFaces() {
         this.facesToRender.forEach(face => {
             face.render(this.ctx);
         });
+
+        this.facesToRender.forEach(face => {
+            this.ctx.fillStyle = 'black';
+            this.ctx.fillText(face.vec3DistanceFromCamera, face.vec2AveragePosition.x, face.vec2AveragePosition.y);
+        });
     }
 
     render() {
         if (this.currentCamera != null) {
             this.currentCamera.updateMatrix();
-            this.getFacesW();
+            this.getFacesAverages();
             this.renderFaces();
         }
     }
@@ -187,7 +200,7 @@ export class Instance {
         this.projectVertices(camera);
 
         this.faces.forEach(face => {
-            face.setwAverage(camera);
+            face.calculateDistanceFromCamera(camera);
         });
     }
 }
@@ -220,7 +233,8 @@ export class Face {
     constructor(indices, color) {
         this.indices = indices;
         this.readyForRendering = false;
-        this.wAverage = null;
+        this.vec2AveragePosition = null;
+        this.vec3DistanceFromCamera = null;
         this.color = color;
 
         let verticesSet = new Set();
@@ -251,7 +265,7 @@ export class Face {
         ctx.fill();
     }
 
-    setwAverage(camera) {
+    calculateDistanceFromCamera(camera) {
         this.readyForRendering = false;
 
         this.indices.forEach(index => {
@@ -261,17 +275,30 @@ export class Face {
         });
 
         if (this.readyForRendering) {
-            let wSum = 0;
-            let amountOfVertices = 0;
+            let xSum = 0;
+            let ySum = 0;
+            let zSum = 0;
+            let vec2XSum = 0;
+            let vec2YSum = 0;
 
             this.vertices.forEach(vertex => {
-                wSum += vertex.w;
-                amountOfVertices++;
+                xSum += vertex.vec3Position.x;
+                ySum += vertex.vec3Position.y;
+                zSum += vertex.vec3Position.z;
+                vec2XSum += vertex.vec2Position.x;
+                vec2YSum += vertex.vec2Position.y;
             });
 
-            this.wAverage = wSum / amountOfVertices;
+            xSum /= this.vertices.length;
+            ySum /= this.vertices.length;
+            zSum /= this.vertices.length;
+            vec2XSum /= this.vertices.length;
+            vec2YSum /= this.vertices.length;
+
+            this.vec3DistanceFromCamera = MyGLMath.vec3Distance(camera.position, new Vector3(xSum, ySum, zSum));
+            this.vec2AveragePosition = new Vector2(vec2XSum, vec2YSum);
         } else {
-            this.wAverage = null;
+            this.vec3DistanceFromCamera = null;
         }
     }
 }
@@ -312,10 +339,9 @@ export class Vertex {
             vertex[0] * matrix[0][3] + vertex[1] * matrix[1][3] + vertex[2] * matrix[2][3] + vertex[3] * matrix[3][3],
         ];
 
-        this.w = projectedVertex[2];
-
         let x = projectedVertex[0];
         let y = projectedVertex[1];
+        this.w = projectedVertex[2];
 
         if (this.w > -camera.frustumPlanes.near) {
             x /= -this.w;
