@@ -139,9 +139,6 @@ export class World {
     renderFaces() {
         this.facesToRender.forEach(face => {
             face.render(this.ctx);
-        });
-
-        this.facesToRender.forEach(face => {
             this.ctx.fillStyle = 'black';
             this.ctx.fillText(face.vec3DistanceFromCamera, face.vec2AveragePosition.x, face.vec2AveragePosition.y);
         });
