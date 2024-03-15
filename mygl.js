@@ -206,14 +206,8 @@ export class Camera extends Instance {
     constructor(canvas, near, far, fov, position, orientation, speed) {
         super();
         this.canvas = canvas;
-        this.frustumPlanes = {
-            near: near,
-            far: far,
-            top: 0,
-            right: canvas.clientWidth,
-            bottom: canvas.clientHeight,
-            left: 0
-        }
+        this.near = near;
+        this.far = far;
         this.fov = fov;
         this.position = position;
         this.orientation = orientation;
@@ -266,7 +260,7 @@ export class Face {
         this.readyForRendering = false;
 
         this.indices.forEach(index => {
-            if (index.isReadyForRendering(camera)) {
+            if (index.isReadyForRendering()) {
                 this.readyForRendering = true;
             }
         });
@@ -306,7 +300,7 @@ export class Index {
         this.vertex2 = vertex2;
     }
 
-    isReadyForRendering(camera) {
+    isReadyForRendering() {
         return (this.vertex1.inFrustum || this.vertex2.inFrustum);
     }
 }
@@ -314,16 +308,17 @@ export class Index {
 export class Vertex {
     constructor(position) {
         this.vec3Position = position;
-        this.w = null;
+        this.NDC = null;
         this.vec2Position = null;
         this.inFrustum = false;
     }
 
-    isInFrustum(camera) {
-        return this.w <= -camera.frustumPlanes.near && 
-        this.w >= -camera.frustumPlanes.far && 
-        this.vec2Position.x >= camera.frustumPlanes.left && this.vec2Position.x <= camera.frustumPlanes.right &&
-        this.vec2Position.y >= camera.frustumPlanes.top && this.vec2Position.y <= camera.frustumPlanes.bottom;
+    isInFrustum() {
+        return (
+            this.NDC.x >= -1 && this.NDC.x <= 1 &&
+            this.NDC.y >= -1 && this.NDC.y <= 1 &&
+            this.NDC.z >= -1 && this.NDC.z <= 1
+        );
     }
 
     project(camera) {
@@ -333,27 +328,26 @@ export class Vertex {
         let projectedVertex = [
             vertex[0] * matrix[0][0] + vertex[1] * matrix[1][0] + vertex[2] * matrix[2][0] + vertex[3] * matrix[3][0],
             vertex[0] * matrix[0][1] + vertex[1] * matrix[1][1] + vertex[2] * matrix[2][1] + vertex[3] * matrix[3][1],
+            vertex[0] * matrix[0][2] + vertex[1] * matrix[1][2] + vertex[2] * matrix[2][2] + vertex[3] * matrix[3][2],
             vertex[0] * matrix[0][3] + vertex[1] * matrix[1][3] + vertex[2] * matrix[2][3] + vertex[3] * matrix[3][3],
         ];
 
-        let x = projectedVertex[0];
-        let y = projectedVertex[1];
-        this.w = projectedVertex[2];
+        this.NDC = new Vector3(projectedVertex[0], projectedVertex[1], projectedVertex[2]);
 
-        if (this.w > -camera.frustumPlanes.near) {
-            x /= -this.w;
-            y /= -this.w;
-        } else {
-            x /= this.w;
-            y /= this.w;
-        }
+        let w = projectedVertex[3];
 
-        let canvasX = (x + 1) * 0.5 * camera.canvas.clientWidth;
-        let canvasY = (1 - y) * 0.5 * camera.canvas.clientHeight;
+        this.NDC.x /= w;
+        this.NDC.y /= w;
+        this.NDC.z /= w;
+
+        console.log(this.NDC.z);
+
+        let canvasX = (this.NDC.x + 1) * 0.5 * camera.canvas.clientWidth;
+        let canvasY = (1 - this.NDC.y) * 0.5 * camera.canvas.clientHeight;
 
         this.vec2Position = new Vector2(canvasX, canvasY);
 
-        if (this.isInFrustum(camera)) {
+        if (this.isInFrustum()) {
             this.inFrustum = true;
         } else {
             this.inFrustum = false;
