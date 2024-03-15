@@ -90,12 +90,14 @@ export class Matrix {
 
     static createProjectionMatrix(camera) {
         const aspectRatio = camera.canvas.clientWidth / camera.canvas.clientHeight;
+
         const projectionMatrix = [
             [MyGLMath.cot(camera.fov / 2) / aspectRatio, 0, 0, 0],
             [0, MyGLMath.cot(camera.fov / 2), 0, 0],
             [0, 0, -(camera.far + camera.near) / (camera.far - camera.near), -1],
             [0, 0, -(2 * camera.far * camera.near) / (camera.far - camera.near), 0]
         ];
+
         return projectionMatrix;
     }
 }
@@ -339,8 +341,6 @@ export class Vertex {
         this.NDC.x /= w;
         this.NDC.y /= w;
         this.NDC.z /= w;
-
-        console.log(this.NDC.z);
 
         let canvasX = (this.NDC.x + 1) * 0.5 * camera.canvas.clientWidth;
         let canvasY = (1 - this.NDC.y) * 0.5 * camera.canvas.clientHeight;
