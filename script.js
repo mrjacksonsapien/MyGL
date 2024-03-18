@@ -9,14 +9,14 @@ let fps = 60;
 let camera1 = new mygl.Camera(
     canvas,
     0,
-    30,
-    70,
+    10,
+    60,
     new mygl.Vector3(0, 0, 0),
     new mygl.Vector3(0, 0, 0),
     0.015,
 );
 
-let world = new mygl.World(camera1);
+let scene = new mygl.Scene(camera1);
 
 let keys = {};
 
@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function handleMouseMove(event) {
-        let currentCamera = world.currentCamera;
+        let currentCamera = scene.currentCamera;
 
         let mouseXMovement = event.movementX;
         let mouseYMovement = event.movementY;
@@ -77,18 +77,15 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 let renderLoop = setInterval(function() {
-    // Clear previous frame
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     // Logic
     handleInputs();
 
     // Render
-    world.render();
+    scene.render();
 }, 1/fps);
 
 function handleInputs() {
-    let currentCamera = world.currentCamera;
+    let currentCamera = scene.currentCamera;
 
     if (keys["w"]) {
         currentCamera.position.x -= currentCamera.speed * Math.sin(mygl.MyGLMath.degToRad(currentCamera.orientation.y));
@@ -116,7 +113,7 @@ function handleInputs() {
 }
 
 function cameraOrientationReassignment() {
-    let currentCamera = world.currentCamera;
+    let currentCamera = scene.currentCamera;
 
     currentCamera.orientation.x %= 360;
     currentCamera.orientation.y %= 360;
@@ -136,4 +133,4 @@ function cameraOrientationReassignment() {
 // Assets
 let cube1 = new mygl.Cube(new mygl.Vector3(0, 0, 2), new mygl.Vector3(1, 1, 1));
 
-world.addToWorld(cube1);
+scene.add(cube1);

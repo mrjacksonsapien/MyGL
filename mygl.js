@@ -5,12 +5,6 @@ export class MyGLMath {
     static cot(degrees) {
         return 1 / Math.tan(MyGLMath.degToRad(degrees));
     }
-    static vec2Distance(vector1, vector2) {
-        return Math.sqrt(Math.pow(vector2.x - vector1.x, 2) + Math.pow(vector2.y - vector1.y, 2));
-    }
-    static vec3Distance(vector1, vector2) {
-        return Math.sqrt(Math.pow(vector2.x - vector1.x, 2) + Math.pow(vector2.y - vector1.y, 2) + Math.pow(vector2.z - vector1.z, 2));
-    }
 }
 
 export class Matrix {
@@ -94,72 +88,40 @@ export class Matrix {
         const projectionMatrix = [
             [MyGLMath.cot(camera.fov / 2) / aspectRatio, 0, 0, 0],
             [0, MyGLMath.cot(camera.fov / 2), 0, 0],
-            [0, 0, -(camera.far + camera.near) / (camera.far - camera.near), -1],
-            [0, 0, -(2 * camera.far * camera.near) / (camera.far - camera.near), 0]
+            [0, 0, -(camera.far / (camera.far - camera.near)), -1],
+            [0, 0, -((camera.far * camera.near) / (camera.far - camera.near)), 0]
         ];
 
         return projectionMatrix;
     }
 }
 
-export class World {
+export class Scene {
     constructor(camera) {
         this.currentCamera = camera;
         this.instances = [];
-        this.ctx = this.currentCamera.canvas.getContext('2d');
-        this.facesToRender = [];
     }
 
-    addToWorld(instance) {
+    add(instance) {
         this.instances.push(instance);
     }
 
-    showIndices() {
-        this.instances.forEach(instance => {
-            instance.showIndices(this.currentCamera);
-        });
-    }
-
-    getFacesAverages() {
-        this.facesToRender = [];
-
-        this.instances.forEach(instance => {
-            instance.render(this.currentCamera);
-
-            instance.faces.forEach(face => {
-                if (face.readyForRendering) {
-                    this.facesToRender.push(face);
-                }
-            });
-        });
-
-        this.facesToRender.sort((a, b) => {
-            return a.vec3DistanceFromCamera - b.vec3DistanceFromCamera;
-        });
-    }
-
-    renderFaces() {
-        this.facesToRender.forEach(face => {
-            face.render(this.ctx);
-            this.ctx.fillStyle = 'black';
-            this.ctx.fillText(face.vec3DistanceFromCamera, face.vec2AveragePosition.x, face.vec2AveragePosition.y);
-        });
+    remove(instance) {
+        let index = this.instances.indexOf(instance);
+        if (index !== -1) {
+            this.instances.splice(index, 1);
+        }
     }
 
     render() {
-        if (this.currentCamera != null) {
-            this.currentCamera.updateMatrix();
-            this.getFacesAverages();
-            this.renderFaces();
-        }
+        this.currentCamera.render(this);
     }
 }
 
 export class Instance {
-    constructor(vertices, indices, faces) {
+    constructor(vertices, indices) {
         this.vertices = vertices;
         this.indices = indices;
-        this.faces = faces;
     }
 
     projectVertices(camera) {
@@ -184,23 +146,8 @@ export class Instance {
                 ctx.closePath();
                 ctx.lineWidth = 1;
                 ctx.stroke();
-
-                let x = (x1 + x2) / 2;
-                let y = (y1 + y2) / 2;
-
-                ctx.fillStyle = "black";
-                ctx.font = '20px Arial';
-                ctx.fillText(i, x, y - 10);
             }
         }
-    }
-
-    render(camera) {
-        this.projectVertices(camera);
-
-        this.faces.forEach(face => {
-            face.calculateDistanceFromCamera(camera);
-        });
     }
 }
 
@@ -214,85 +161,22 @@ export class Camera extends Instance {
         this.position = position;
         this.orientation = orientation;
         this.speed = speed;
+        this.ctx = this.canvas.getContext('2d');
         this.matrix = new Matrix(this);
     }
 
-    updateMatrix() {
+    render(scene) {
+        this.ctx.clearRect(0, 0, this.canvas.clientWidth, this.canvas.clientHeight);
+        
         this.matrix.updateCurrentMatrix(this);
-    }
-}
 
-export class Face {
-    constructor(indices, color) {
-        this.indices = indices;
-        this.readyForRendering = false;
-        this.vec2AveragePosition = null;
-        this.vec3DistanceFromCamera = null;
-        this.color = color;
-
-        let verticesSet = new Set();
-
-        indices.forEach(index => {
-            verticesSet.add(index.vertex1);
-            verticesSet.add(index.vertex2);
+        scene.instances.forEach(instance => {
+            instance.projectVertices(this);
         });
 
-        this.vertices = Array.from(verticesSet);
-    }
-
-    render(ctx) {
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-
-        if (this.vertices.length > 0) {
-            let firstVertex = this.vertices[0];
-            ctx.moveTo(firstVertex.vec2Position.x, firstVertex.vec2Position.y);
-        }
-
-        for (let i = 1; i < this.vertices.length; i++) {
-            let currentVertex = this.vertices[i];
-            ctx.lineTo(currentVertex.vec2Position.x, currentVertex.vec2Position.y);
-        }
-
-        ctx.closePath();
-        ctx.fill();
-    }
-
-    calculateDistanceFromCamera(camera) {
-        this.readyForRendering = false;
-
-        this.indices.forEach(index => {
-            if (index.isReadyForRendering()) {
-                this.readyForRendering = true;
-            }
+        scene.instances.forEach(instance => {
+            instance.showIndices(this);
         });
-
-        if (this.readyForRendering) {
-            let xSum = 0;
-            let ySum = 0;
-            let zSum = 0;
-            let vec2XSum = 0;
-            let vec2YSum = 0;
-
-            this.vertices.forEach(vertex => {
-                xSum += vertex.vec3Position.x;
-                ySum += vertex.vec3Position.y;
-                zSum += vertex.vec3Position.z;
-                vec2XSum += vertex.vec2Position.x;
-                vec2YSum += vertex.vec2Position.y;
-            });
-
-            xSum /= this.vertices.length;
-            ySum /= this.vertices.length;
-            zSum /= this.vertices.length;
-            vec2XSum /= this.vertices.length;
-            vec2YSum /= this.vertices.length;
-
-            this.vec3DistanceFromCamera = MyGLMath.vec3Distance(camera.position, new Vector3(xSum, ySum, zSum));
-            this.vec2AveragePosition = new Vector2(vec2XSum, vec2YSum);
-        } else {
-            this.vec3DistanceFromCamera = null;
-        }
     }
 }
 
@@ -315,7 +199,7 @@ export class Vertex {
         this.inFrustum = false;
     }
 
-    isInFrustum() {
+    isInFrustum(camera) {
         return (
             this.NDC.x >= -1 && this.NDC.x <= 1 &&
             this.NDC.y >= -1 && this.NDC.y <= 1 &&
@@ -334,6 +218,8 @@ export class Vertex {
             vertex[0] * matrix[0][3] + vertex[1] * matrix[1][3] + vertex[2] * matrix[2][3] + vertex[3] * matrix[3][3],
         ];
 
+        console.log(projectedVertex);
+
         this.NDC = new Vector3(projectedVertex[0], projectedVertex[1], projectedVertex[2]);
 
         let w = projectedVertex[3];
@@ -347,7 +233,7 @@ export class Vertex {
 
         this.vec2Position = new Vector2(canvasX, canvasY);
 
-        if (this.isInFrustum()) {
+        if (this.isInFrustum(camera)) {
             this.inFrustum = true;
         } else {
             this.inFrustum = false;
@@ -403,14 +289,6 @@ export class Cube extends Instance {
             new Index(this.vertices[1], this.vertices[5]),
             new Index(this.vertices[2], this.vertices[6]),
             new Index(this.vertices[3], this.vertices[7])
-        ];
-        this.faces = [
-            new Face([this.indices[0], this.indices[1], this.indices[2], this.indices[3]], 'blue'),
-            new Face([this.indices[4], this.indices[5], this.indices[6], this.indices[7]], 'blue'),
-            new Face([this.indices[8], this.indices[7], this.indices[3], this.indices[11]], 'red'),
-            new Face([this.indices[5], this.indices[10], this.indices[1], this.indices[9]], 'red'),
-            new Face([this.indices[0], this.indices[9], this.indices[4], this.indices[8]], 'green'),
-            new Face([this.indices[10], this.indices[6], this.indices[11], this.indices[2]], 'green')
         ];
     }
 }
