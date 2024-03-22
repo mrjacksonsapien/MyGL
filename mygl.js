@@ -89,7 +89,7 @@ export class Matrix {
             [MyGLMath.cot(camera.fov / 2) / aspectRatio, 0, 0, 0],
             [0, MyGLMath.cot(camera.fov / 2), 0, 0],
             [0, 0, 0, -1],
-            [0, 0, 0, 0]
+            [camera.NDCOffset.x, camera.NDCOffset.y, 0, camera.NDCOffset.z]
         ];
 
         return projectionMatrix;
@@ -162,9 +162,13 @@ export class Camera extends Instance {
         this.near = near;
         this.far = far;
         this.fov = fov;
+
         this.position = position;
         this.orientation = orientation;
+        this.NDCOffset = new Vector3(0, 0, 0);
+
         this.speed = speed;
+        this.scrollDistanceTest = 0;
 
         this.matrix = new Matrix(this);
         this.ctx = this.canvas.getContext('2d');
@@ -202,11 +206,12 @@ export class Vertex {
 
         this.NDC = null;
         this.vec2 = null;
+        this.w = null;
         
         this.inFrustum = false;
     }
 
-    isInFrustum(camera) {
+    isInFrustum() {
         return (
             this.NDC.x >= -1 && this.NDC.x <= 1 &&
             this.NDC.y >= -1 && this.NDC.y <= 1 &&
@@ -228,6 +233,7 @@ export class Vertex {
         this.NDC = new Vector3(ndcVertex[0], ndcVertex[1], ndcVertex[2]);
 
         let w = ndcVertex[3];
+        this.w = w;
 
         this.NDC.x /= w;
         this.NDC.y /= w;
@@ -238,7 +244,7 @@ export class Vertex {
 
         this.vec2Position = new Vector2(canvasX, canvasY);
 
-        if (this.isInFrustum(camera)) {
+        if (this.isInFrustum()) {
             this.inFrustum = true;
         } else {
             this.inFrustum = false;

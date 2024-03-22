@@ -8,11 +8,11 @@ let fps = 60;
 
 let camera1 = new mygl.Camera(
     canvas,
-    0,
-    10,
-    60,
-    new mygl.Vector3(0, 0, 0),
-    new mygl.Vector3(0, 0, 0),
+    0.1, // near
+    10, // far
+    70, // fov
+    new mygl.Vector3(0, 0, 0), // position
+    new mygl.Vector3(0, 0, 0), // orientation
     0.015,
 );
 
@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.addEventListener('click', () => {
         canvas.requestPointerLock({unadjustedMovement: true});
         addEventListener('mousemove', handleMouseMove);
+        addEventListener('wheel', handleMouseScroll);
     });
 
     function handleMouseMove(event) {
@@ -69,9 +70,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function handleMouseScroll(event) {
+        let currentCamera = scene.currentCamera;
+
+        currentCamera.NDCOffset.z -= event.deltaY / 500;
+
+        if (currentCamera.NDCOffset.z > 0) {
+            currentCamera.NDCOffset.z = 0;
+        }
+    }
+
     document.addEventListener('pointerlockchange', () => {
         if (document.pointerLockElement === null) {
             removeEventListener('mousemove', handleMouseMove);
+            removeEventListener('wheel', handleMouseScroll);
         }
     });
 });
@@ -135,11 +147,14 @@ function cameraOrientationReassignment() {
 }
 
 // Assets
-let cube1 = new mygl.Cube(new mygl.Vector3(0, 0, 2), new mygl.Vector3(1, 1, 1));
+let cube1 = new mygl.Cube(new mygl.Vector3(0, 0, 0), new mygl.Vector3(1, 1, 1));
+
+/*
 cube1.act = () => {
     if (cube1.vertices[0].NDC != null) {
         console.log(cube1.vertices[0].NDC.z);
     }
 };
+*/
 
 scene.add(cube1);
