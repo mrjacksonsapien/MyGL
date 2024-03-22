@@ -22,12 +22,12 @@ export class Matrix {
     }
 
     static multiply4x4Matrices(a, b) {
-        var result = [];
-        for (var i = 0; i < 4; i++) {
+        let result = [];
+        for (let i = 0; i < 4; i++) {
             result[i] = [];
-            for (var j = 0; j < 4; j++) {
+            for (let j = 0; j < 4; j++) {
                 result[i][j] = 0;
-                for (var k = 0; k < 4; k++) {
+                for (let k = 0; k < 4; k++) {
                     result[i][j] += a[i][k] * b[k][j];
                 }
             }
@@ -88,8 +88,8 @@ export class Matrix {
         const projectionMatrix = [
             [MyGLMath.cot(camera.fov / 2) / aspectRatio, 0, 0, 0],
             [0, MyGLMath.cot(camera.fov / 2), 0, 0],
-            [0, 0, -(camera.far / (camera.far - camera.near)), -1],
-            [0, 0, -((camera.far * camera.near) / (camera.far - camera.near)), 0]
+            [0, 0, 0, -1],
+            [0, 0, 0, 0]
         ];
 
         return projectionMatrix;
@@ -114,6 +114,9 @@ export class Scene {
     }
 
     render() {
+        this.instances.forEach(instance => {
+            instance.act();   
+        });
         this.currentCamera.render(this);
     }
 }
@@ -122,6 +125,7 @@ export class Instance {
     constructor(vertices, indices) {
         this.vertices = vertices;
         this.indices = indices;
+        this.act = () => {};
     }
 
     projectVertices(camera) {
@@ -161,8 +165,9 @@ export class Camera extends Instance {
         this.position = position;
         this.orientation = orientation;
         this.speed = speed;
-        this.ctx = this.canvas.getContext('2d');
+
         this.matrix = new Matrix(this);
+        this.ctx = this.canvas.getContext('2d');
     }
 
     render(scene) {
@@ -187,15 +192,17 @@ export class Index {
     }
 
     isReadyForRendering() {
-        return (this.vertex1.inFrustum || this.vertex2.inFrustum);
+        return true;
     }
 }
 
 export class Vertex {
     constructor(position) {
-        this.vec3Position = position;
+        this.vec3 = position;
+
         this.NDC = null;
-        this.vec2Position = null;
+        this.vec2 = null;
+        
         this.inFrustum = false;
     }
 
@@ -203,26 +210,24 @@ export class Vertex {
         return (
             this.NDC.x >= -1 && this.NDC.x <= 1 &&
             this.NDC.y >= -1 && this.NDC.y <= 1 &&
-            this.NDC.z >= -1 && this.NDC.z <= 1
+            this.NDC.z >= 0 && this.NDC.z <= 1
         );
     }
 
     project(camera) {
-        let vertex = [this.vec3Position.x, this.vec3Position.y, this.vec3Position.z, 1];
+        let vertex = [this.vec3.x, this.vec3.y, this.vec3.z, 1];
         let matrix = camera.matrix.currentMatrix;
 
-        let projectedVertex = [
+        const ndcVertex = [
             vertex[0] * matrix[0][0] + vertex[1] * matrix[1][0] + vertex[2] * matrix[2][0] + vertex[3] * matrix[3][0],
             vertex[0] * matrix[0][1] + vertex[1] * matrix[1][1] + vertex[2] * matrix[2][1] + vertex[3] * matrix[3][1],
             vertex[0] * matrix[0][2] + vertex[1] * matrix[1][2] + vertex[2] * matrix[2][2] + vertex[3] * matrix[3][2],
-            vertex[0] * matrix[0][3] + vertex[1] * matrix[1][3] + vertex[2] * matrix[2][3] + vertex[3] * matrix[3][3],
+            vertex[0] * matrix[0][3] + vertex[1] * matrix[1][3] + vertex[2] * matrix[2][3] + vertex[3] * matrix[3][3]
         ];
 
-        console.log(projectedVertex);
+        this.NDC = new Vector3(ndcVertex[0], ndcVertex[1], ndcVertex[2]);
 
-        this.NDC = new Vector3(projectedVertex[0], projectedVertex[1], projectedVertex[2]);
-
-        let w = projectedVertex[3];
+        let w = ndcVertex[3];
 
         this.NDC.x /= w;
         this.NDC.y /= w;

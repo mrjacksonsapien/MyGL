@@ -78,6 +78,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 let renderLoop = setInterval(function() {
     // Logic
+    /*
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    */
     handleInputs();
 
     // Render
@@ -132,5 +136,10 @@ function cameraOrientationReassignment() {
 
 // Assets
 let cube1 = new mygl.Cube(new mygl.Vector3(0, 0, 2), new mygl.Vector3(1, 1, 1));
+cube1.act = () => {
+    if (cube1.vertices[0].NDC != null) {
+        console.log(cube1.vertices[0].NDC.z);
+    }
+};
 
 scene.add(cube1);
