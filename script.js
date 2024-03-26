@@ -2,14 +2,13 @@ import * as mygl from './mygl.js';
 window.mygl = mygl;
 
 let canvas = document.getElementById("renderViewport");
-let ctx = canvas.getContext("2d");
 
 let fps = 60;
 
 let camera1 = new mygl.Camera(
     canvas,
-    0.1, // near
-    10, // far
+    -0.1, // near
+    -10, // far
     70, // fov
     new mygl.Vector3(0, 0, 0), // position
     new mygl.Vector3(0, 0, 0), // orientation
@@ -20,31 +19,13 @@ let scene = new mygl.Scene(camera1);
 
 let keys = {};
 
-document.addEventListener("keydown", (event) => {
-    let key = event.key;
-
-    if (key.length == 1) {
-        key = key.toLowerCase();
-    }
-
-    keys[key] = true;
-});
-
-document.addEventListener("keyup", (event) => {
-    let key = event.key;
-
-    if (key.length == 1) {
-        key = key.toLowerCase();
-    }
-
-    keys[key] = false;
-});
-
 document.addEventListener('DOMContentLoaded', () => {
     canvas.addEventListener('click', () => {
         canvas.requestPointerLock({unadjustedMovement: true});
         addEventListener('mousemove', handleMouseMove);
-        addEventListener('wheel', handleMouseScroll);
+        /*addEventListener('wheel', handleMouseScroll);*/
+        addEventListener('keydown', handleKeyDown);
+        addEventListener('keyup', handleKeyUp);
     });
 
     function handleMouseMove(event) {
@@ -70,6 +51,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function handleKeyDown(event) {
+        let key = event.key;
+
+        if (key.length == 1) {
+            key = key.toLowerCase();
+        }
+    
+        keys[key] = true;
+    }
+
+    function handleKeyUp(event) {
+        let key = event.key;
+
+        if (key.length == 1) {
+            key = key.toLowerCase();
+        }
+    
+        keys[key] = false;
+    }
+
+    /*
     function handleMouseScroll(event) {
         let currentCamera = scene.currentCamera;
 
@@ -79,21 +81,19 @@ document.addEventListener('DOMContentLoaded', () => {
             currentCamera.NDCOffset.z = 0;
         }
     }
+    */
 
     document.addEventListener('pointerlockchange', () => {
         if (document.pointerLockElement === null) {
             removeEventListener('mousemove', handleMouseMove);
-            removeEventListener('wheel', handleMouseScroll);
+            /*removeEventListener('wheel', handleMouseScroll);*/
+            removeEventListener('keydown', handleKeyDown);
+            removeEventListener('keyup', handleKeyUp);
         }
     });
 });
 
 let renderLoop = setInterval(function() {
-    // Logic
-    /*
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    */
     handleInputs();
 
     // Render
@@ -105,19 +105,19 @@ function handleInputs() {
 
     if (keys["w"]) {
         currentCamera.position.x -= currentCamera.speed * Math.sin(mygl.MyGLMath.degToRad(currentCamera.orientation.y));
-        currentCamera.position.z += currentCamera.speed * Math.cos(mygl.MyGLMath.degToRad(currentCamera.orientation.y));
+        currentCamera.position.z -= currentCamera.speed * Math.cos(mygl.MyGLMath.degToRad(currentCamera.orientation.y));
     }
     if (keys["s"]) {
         currentCamera.position.x += currentCamera.speed * Math.sin(mygl.MyGLMath.degToRad(currentCamera.orientation.y));
-        currentCamera.position.z -= currentCamera.speed * Math.cos(mygl.MyGLMath.degToRad(currentCamera.orientation.y));
+        currentCamera.position.z += currentCamera.speed * Math.cos(mygl.MyGLMath.degToRad(currentCamera.orientation.y));
     }
     if (keys["a"]) {
         currentCamera.position.x -= currentCamera.speed * Math.sin(mygl.MyGLMath.degToRad(currentCamera.orientation.y + 90));
-        currentCamera.position.z -= currentCamera.speed * Math.cos(mygl.MyGLMath.degToRad(currentCamera.orientation.y - 90));
+        currentCamera.position.z += currentCamera.speed * Math.cos(mygl.MyGLMath.degToRad(currentCamera.orientation.y - 90));
     }
     if (keys["d"]) {
         currentCamera.position.x += currentCamera.speed * Math.sin(mygl.MyGLMath.degToRad(currentCamera.orientation.y + 90));
-        currentCamera.position.z += currentCamera.speed * Math.cos(mygl.MyGLMath.degToRad(currentCamera.orientation.y - 90));
+        currentCamera.position.z -= currentCamera.speed * Math.cos(mygl.MyGLMath.degToRad(currentCamera.orientation.y - 90));
     }
     if (keys[" "]) {
         currentCamera.position.y += currentCamera.speed;
@@ -147,14 +147,12 @@ function cameraOrientationReassignment() {
 }
 
 // Assets
-let cube1 = new mygl.Cube(new mygl.Vector3(0, 0, 0), new mygl.Vector3(1, 1, 1));
+let cube1 = new mygl.Cube(new mygl.Vector3(0, 0, 2), new mygl.Vector3(1, 1, 1));
 
-/*
 cube1.act = () => {
     if (cube1.vertices[0].NDC != null) {
         console.log(cube1.vertices[0].NDC.z);
     }
 };
-*/
 
 scene.add(cube1);

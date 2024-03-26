@@ -40,7 +40,7 @@ export class Matrix {
             [1, 0, 0, 0],
             [0, 1, 0, 0],
             [0, 0, 1, 0],
-            [camera.position.x, camera.position.y, -camera.position.z, 1]
+            [camera.position.x, camera.position.y, camera.position.z, 1]
         ];
         return translationMatrix;
     }
@@ -88,8 +88,8 @@ export class Matrix {
         const projectionMatrix = [
             [MyGLMath.cot(camera.fov / 2) / aspectRatio, 0, 0, 0],
             [0, MyGLMath.cot(camera.fov / 2), 0, 0],
-            [0, 0, 0, -1],
-            [camera.NDCOffset.x, camera.NDCOffset.y, 0, camera.NDCOffset.z]
+            [0, 0, -(camera.far / (camera.far - camera.near)), -1],
+            [0, 0, -((camera.far * camera.near) / (camera.far - camera.near)), 0]
         ];
 
         return projectionMatrix;
@@ -138,26 +138,23 @@ export class Instance {
         for (let i = 0; i < this.indices.length; i++) {
             const index = this.indices[i];
 
-            if (index.isReadyForRendering(camera)) {
-                let ctx = camera.canvas.getContext('2d');
+            let ctx = camera.canvas.getContext('2d');
 
-                let [x1, y1] = [index.vertex1.vec2Position.x, index.vertex1.vec2Position.y];
-                let [x2, y2] = [index.vertex2.vec2Position.x, index.vertex2.vec2Position.y];
+            let [x1, y1] = [index.vertex1.vec2Position.x, index.vertex1.vec2Position.y];
+            let [x2, y2] = [index.vertex2.vec2Position.x, index.vertex2.vec2Position.y];
 
-                ctx.beginPath();
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y2);
-                ctx.closePath();
-                ctx.lineWidth = 1;
-                ctx.stroke();
-            }
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.closePath();
+            ctx.lineWidth = 1;
+            ctx.stroke();
         }
     }
 }
 
-export class Camera extends Instance {
+export class Camera {
     constructor(canvas, near, far, fov, position, orientation, speed) {
-        super();
         this.canvas = canvas;
         this.near = near;
         this.far = far;
@@ -194,10 +191,6 @@ export class Index {
         this.vertex1 = vertex1;
         this.vertex2 = vertex2;
     }
-
-    isReadyForRendering() {
-        return true;
-    }
 }
 
 export class Vertex {
@@ -220,24 +213,29 @@ export class Vertex {
     }
 
     project(camera) {
-        let vertex = [this.vec3.x, this.vec3.y, this.vec3.z, 1];
+        let vertex = {
+            x: this.vec3.x,
+            y: this.vec3.y,
+            z: this.vec3.z,
+            w: 1
+        }
+
         let matrix = camera.matrix.currentMatrix;
 
-        const ndcVertex = [
-            vertex[0] * matrix[0][0] + vertex[1] * matrix[1][0] + vertex[2] * matrix[2][0] + vertex[3] * matrix[3][0],
-            vertex[0] * matrix[0][1] + vertex[1] * matrix[1][1] + vertex[2] * matrix[2][1] + vertex[3] * matrix[3][1],
-            vertex[0] * matrix[0][2] + vertex[1] * matrix[1][2] + vertex[2] * matrix[2][2] + vertex[3] * matrix[3][2],
-            vertex[0] * matrix[0][3] + vertex[1] * matrix[1][3] + vertex[2] * matrix[2][3] + vertex[3] * matrix[3][3]
-        ];
+        let projectedVertex = {
+            x: vertex.x * matrix[0][0] + vertex.y * matrix[1][0] + vertex.z * matrix[2][0] + vertex.w * matrix[3][0],
+            y: vertex.x * matrix[0][1] + vertex.y * matrix[1][1] + vertex.z * matrix[2][1] + vertex.w * matrix[3][1],
+            z: vertex.x * matrix[0][2] + vertex.y * matrix[1][2] + vertex.z * matrix[2][2] + vertex.w * matrix[3][2],
+            w: vertex.x * matrix[0][3] + vertex.y * matrix[1][3] + vertex.z * matrix[2][3] + vertex.w * matrix[3][3]
+        };
 
-        this.NDC = new Vector3(ndcVertex[0], ndcVertex[1], ndcVertex[2]);
+        this.w = projectedVertex.w;
 
-        let w = ndcVertex[3];
-        this.w = w;
+        projectedVertex.x /= projectedVertex.w;
+        projectedVertex.y /= projectedVertex.w;
+        projectedVertex.z /= projectedVertex.w;
 
-        this.NDC.x /= w;
-        this.NDC.y /= w;
-        this.NDC.z /= w;
+        this.NDC = new Vector3(projectedVertex.x, projectedVertex.y, projectedVertex.z);
 
         let canvasX = (this.NDC.x + 1) * 0.5 * camera.canvas.clientWidth;
         let canvasY = (1 - this.NDC.y) * 0.5 * camera.canvas.clientHeight;
