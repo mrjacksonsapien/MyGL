@@ -89,7 +89,7 @@ export class Matrix {
             [MyGLMath.cot(camera.fov / 2) / aspectRatio, 0, 0, 0],
             [0, MyGLMath.cot(camera.fov / 2), 0, 0],
             [0, 0, -(camera.far / (camera.far - camera.near)), -1],
-            [0, 0, -((camera.far * camera.near) / (camera.far - camera.near)), 0]
+            [0, 0, ((camera.far * camera.near) / (camera.far - camera.near)), 0]
         ];
 
         return projectionMatrix;
@@ -138,17 +138,19 @@ export class Instance {
         for (let i = 0; i < this.indices.length; i++) {
             const index = this.indices[i];
 
-            let ctx = camera.canvas.getContext('2d');
+            if (index.isReadyForRendering()) {
+                let ctx = camera.canvas.getContext('2d');
 
-            let [x1, y1] = [index.vertex1.vec2Position.x, index.vertex1.vec2Position.y];
-            let [x2, y2] = [index.vertex2.vec2Position.x, index.vertex2.vec2Position.y];
-
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.closePath();
-            ctx.lineWidth = 1;
-            ctx.stroke();
+                let [x1, y1] = [index.vertex1.vec2Position.x, index.vertex1.vec2Position.y];
+                let [x2, y2] = [index.vertex2.vec2Position.x, index.vertex2.vec2Position.y];
+    
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.closePath();
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
         }
     }
 }
@@ -190,6 +192,10 @@ export class Index {
     constructor(vertex1, vertex2) {
         this.vertex1 = vertex1;
         this.vertex2 = vertex2;
+    }
+
+    isReadyForRendering() {
+        return this.vertex1.inFrustum && this.vertex2.inFrustum;
     }
 }
 

@@ -7,12 +7,12 @@ let fps = 60;
 
 let camera1 = new mygl.Camera(
     canvas,
-    -0.1, // near
-    -10, // far
+    1, // near
+    10, // far
     70, // fov
     new mygl.Vector3(0, 0, 0), // position
     new mygl.Vector3(0, 0, 0), // orientation
-    0.015,
+    0.015 // speed,
 );
 
 let scene = new mygl.Scene(camera1);
@@ -23,7 +23,6 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.addEventListener('click', () => {
         canvas.requestPointerLock({unadjustedMovement: true});
         addEventListener('mousemove', handleMouseMove);
-        /*addEventListener('wheel', handleMouseScroll);*/
         addEventListener('keydown', handleKeyDown);
         addEventListener('keyup', handleKeyUp);
     });
@@ -71,22 +70,9 @@ document.addEventListener('DOMContentLoaded', () => {
         keys[key] = false;
     }
 
-    /*
-    function handleMouseScroll(event) {
-        let currentCamera = scene.currentCamera;
-
-        currentCamera.NDCOffset.z -= event.deltaY / 500;
-
-        if (currentCamera.NDCOffset.z > 0) {
-            currentCamera.NDCOffset.z = 0;
-        }
-    }
-    */
-
     document.addEventListener('pointerlockchange', () => {
         if (document.pointerLockElement === null) {
             removeEventListener('mousemove', handleMouseMove);
-            /*removeEventListener('wheel', handleMouseScroll);*/
             removeEventListener('keydown', handleKeyDown);
             removeEventListener('keyup', handleKeyUp);
         }
