@@ -36,46 +36,45 @@ export class Matrix {
     }
 
     static createTranslationMatrix(camera) {
-        const translationMatrix = [
+        return [
             [1, 0, 0, 0],
             [0, 1, 0, 0],
             [0, 0, 1, 0],
             [camera.position.x, camera.position.y, camera.position.z, 1]
         ];
-        return translationMatrix;
     }
 
     static createPitchMatrix(pitchDegrees) {
         const pitch = MyGLMath.degToRad(pitchDegrees);
-        const pitchMatrix = [
+
+        return [
             [1, 0, 0, 0],
             [0, Math.cos(pitch), -Math.sin(pitch), 0],
             [0, Math.sin(pitch), Math.cos(pitch), 0],
             [0, 0, 0, 1]
         ];
-        return pitchMatrix;
     }
 
     static createYawMatrix(yawDegrees) {
         const yaw = MyGLMath.degToRad(yawDegrees);
-        const yawMatrix = [
+
+        return [
             [Math.cos(yaw), 0, Math.sin(yaw), 0],
             [0, 1, 0, 0],
             [-Math.sin(yaw), 0, Math.cos(yaw), 0],
             [0, 0, 0, 1]
         ];
-        return yawMatrix;
     }
 
     static createRollMatrix(rollDegrees) {
         const roll = MyGLMath.degToRad(rollDegrees);
-        const rollMatrix = [
+
+        return [
             [Math.cos(roll), -Math.sin(roll), 0, 0],
             [Math.sin(roll), Math.cos(roll), 0, 0],
             [0, 0, 1, 0],
             [0, 0, 0, 1]
         ];
-        return rollMatrix;
     }
 
     static createEulerMatrix(camera) {
@@ -85,14 +84,12 @@ export class Matrix {
     static createProjectionMatrix(camera) {
         const aspectRatio = camera.canvas.clientWidth / camera.canvas.clientHeight;
 
-        const projectionMatrix = [
+        return [
             [MyGLMath.cot(camera.fov / 2) / aspectRatio, 0, 0, 0],
             [0, MyGLMath.cot(camera.fov / 2), 0, 0],
             [0, 0, -(camera.far / (camera.far - camera.near)), -1],
             [0, 0, ((camera.far * camera.near) / (camera.far - camera.near)), 0]
         ];
-
-        return projectionMatrix;
     }
 }
 
@@ -164,10 +161,8 @@ export class Camera {
 
         this.position = position;
         this.orientation = orientation;
-        this.NDCOffset = new Vector3(0, 0, 0);
 
         this.speed = speed;
-        this.scrollDistanceTest = 0;
 
         this.matrix = new Matrix(this);
         this.ctx = this.canvas.getContext('2d');
@@ -248,11 +243,7 @@ export class Vertex {
 
         this.vec2Position = new Vector2(canvasX, canvasY);
 
-        if (this.isInFrustum()) {
-            this.inFrustum = true;
-        } else {
-            this.inFrustum = false;
-        }
+        this.inFrustum = this.isInFrustum();
     }
 }
 

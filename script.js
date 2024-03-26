@@ -21,7 +21,7 @@ let keys = {};
 
 document.addEventListener('DOMContentLoaded', () => {
     canvas.addEventListener('click', () => {
-        canvas.requestPointerLock({unadjustedMovement: true});
+        canvas.requestPointerLock();
         addEventListener('mousemove', handleMouseMove);
         addEventListener('keydown', handleKeyDown);
         addEventListener('keyup', handleKeyUp);
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleKeyDown(event) {
         let key = event.key;
 
-        if (key.length == 1) {
+        if (key.length === 1) {
             key = key.toLowerCase();
         }
     
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleKeyUp(event) {
         let key = event.key;
 
-        if (key.length == 1) {
+        if (key.length === 1) {
             key = key.toLowerCase();
         }
     
