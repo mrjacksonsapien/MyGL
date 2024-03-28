@@ -146,6 +146,7 @@ export class Instance {
                 ctx.lineTo(x2, y2);
                 ctx.closePath();
                 ctx.lineWidth = 1;
+                ctx.strokeStyle = 'white';
                 ctx.stroke();
             }
         }
