@@ -7,7 +7,7 @@ let fps = 60;
 
 let camera1 = new mygl.Camera(
     canvas,
-    1, // near
+    0.1, // near
     10, // far
     70, // fov
     new mygl.Vector3(0, 0, 0), // position
