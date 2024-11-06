@@ -201,7 +201,6 @@ export class Vertex {
 
         this.NDC = null;
         this.vec2 = null;
-        this.w = null;
         
         this.inFrustum = false;
     }
@@ -230,8 +229,6 @@ export class Vertex {
             z: vertex.x * matrix[0][2] + vertex.y * matrix[1][2] + vertex.z * matrix[2][2] + vertex.w * matrix[3][2],
             w: vertex.x * matrix[0][3] + vertex.y * matrix[1][3] + vertex.z * matrix[2][3] + vertex.w * matrix[3][3]
         };
-
-        this.w = projectedVertex.w;
 
         projectedVertex.x /= projectedVertex.w;
         projectedVertex.y /= projectedVertex.w;
