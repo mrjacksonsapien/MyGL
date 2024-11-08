@@ -5,6 +5,9 @@ export class MyGLMath {
     static cot(degrees) {
         return 1 / Math.tan(MyGLMath.degToRad(degrees));
     }
+    static clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+    }
 }
 
 export class Matrix {
@@ -114,7 +117,9 @@ export class Scene {
         this.instances.forEach(instance => {
             instance.act();   
         });
-        this.currentCamera.render(this);
+        if (this.currentCamera != null) {
+            this.currentCamera.render(this);
+        }
     }
 }
 
@@ -174,6 +179,7 @@ export class Camera {
         
         this.matrix.updateCurrentMatrix(this);
 
+        // Always project everything first before doing any other rendering
         scene.instances.forEach(instance => {
             instance.projectVertices(this);
         });
@@ -198,10 +204,8 @@ export class Index {
 export class Vertex {
     constructor(position) {
         this.vec3 = position;
-
         this.NDC = null;
         this.vec2 = null;
-        
         this.inFrustum = false;
     }
 
@@ -223,6 +227,7 @@ export class Vertex {
 
         let matrix = camera.matrix.currentMatrix;
 
+        // Projection with matrix
         let projectedVertex = {
             x: vertex.x * matrix[0][0] + vertex.y * matrix[1][0] + vertex.z * matrix[2][0] + vertex.w * matrix[3][0],
             y: vertex.x * matrix[0][1] + vertex.y * matrix[1][1] + vertex.z * matrix[2][1] + vertex.w * matrix[3][1],
@@ -230,17 +235,21 @@ export class Vertex {
             w: vertex.x * matrix[0][3] + vertex.y * matrix[1][3] + vertex.z * matrix[2][3] + vertex.w * matrix[3][3]
         };
 
+        // Homogeneous division by w
         projectedVertex.x /= projectedVertex.w;
         projectedVertex.y /= projectedVertex.w;
         projectedVertex.z /= projectedVertex.w;
 
+        // Final normalized-device-coordinates
         this.NDC = new Vector3(projectedVertex.x, projectedVertex.y, projectedVertex.z);
 
         let canvasX = (this.NDC.x + 1) * 0.5 * camera.canvas.clientWidth;
         let canvasY = (1 - this.NDC.y) * 0.5 * camera.canvas.clientHeight;
 
+        // Canvas 2D coordinates
         this.vec2Position = new Vector2(canvasX, canvasY);
 
+        // Check if vertex is in camera frustum
         this.inFrustum = this.isInFrustum();
     }
 }

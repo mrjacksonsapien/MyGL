@@ -16,8 +16,10 @@ let camera1 = new mygl.Camera(
 );
 
 let scene = new mygl.Scene(camera1);
+let currentCamera = scene.currentCamera;
 
 let keys = {};
+let gamepadIndex = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     canvas.addEventListener('click', () => {
@@ -28,26 +30,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function handleMouseMove(event) {
-        let currentCamera = scene.currentCamera;
-
         let mouseXMovement = event.movementX;
         let mouseYMovement = event.movementY;
     
         currentCamera.orientation.y -= mouseXMovement * currentCamera.speed * 10;
-    
         currentCamera.orientation.x -= mouseYMovement * currentCamera.speed * 10;
 
-        let distanceFrom90 = Math.abs(90 - currentCamera.orientation.x);
-        let distanceFrom270 = Math.abs(270 - currentCamera.orientation.x);
-
-        // Clamp camera
-        if (currentCamera.orientation.x > 90 && currentCamera.orientation.x < 270) {
-            if (distanceFrom90 <= distanceFrom270) {
-                currentCamera.orientation.x = 90;
-            } else {
-                currentCamera.orientation.x = 270;
-            }
-        }
+        cameraClamp();
     }
 
     function handleKeyDown(event) {
@@ -77,6 +66,16 @@ document.addEventListener('DOMContentLoaded', () => {
             removeEventListener('keyup', handleKeyUp);
         }
     });
+
+    window.addEventListener("gamepadconnected", (event) => {
+        console.log("Gamepad connected at index", event.gamepad.index);
+        gamepadIndex = event.gamepad.index;
+    });
+
+    window.addEventListener("gamepaddisconnected", () => {
+        console.log("Gamepad disconnected");
+        gamepadIndex = null;
+    });
 });
 
 let renderLoop = setInterval(function() {
@@ -86,37 +85,115 @@ let renderLoop = setInterval(function() {
     scene.render();
 }, 1/fps);
 
-function handleInputs() {
-    let currentCamera = scene.currentCamera;
+function cameraClamp() {
+    let distanceFrom90 = Math.abs(90 - currentCamera.orientation.x);
+    let distanceFrom270 = Math.abs(270 - currentCamera.orientation.x);
 
-    if (keys["w"]) {
-        currentCamera.position.x -= currentCamera.speed * Math.sin(mygl.MyGLMath.degToRad(currentCamera.orientation.y));
-        currentCamera.position.z -= currentCamera.speed * Math.cos(mygl.MyGLMath.degToRad(currentCamera.orientation.y));
+    if (currentCamera.orientation.x > 90 && currentCamera.orientation.x < 270) {
+        if (distanceFrom90 <= distanceFrom270) {
+            currentCamera.orientation.x = 90;
+        } else {
+            currentCamera.orientation.x = 270;
+        }
     }
-    if (keys["s"]) {
-        currentCamera.position.x += currentCamera.speed * Math.sin(mygl.MyGLMath.degToRad(currentCamera.orientation.y));
-        currentCamera.position.z += currentCamera.speed * Math.cos(mygl.MyGLMath.degToRad(currentCamera.orientation.y));
-    }
-    if (keys["a"]) {
-        currentCamera.position.x -= currentCamera.speed * Math.sin(mygl.MyGLMath.degToRad(currentCamera.orientation.y + 90));
-        currentCamera.position.z += currentCamera.speed * Math.cos(mygl.MyGLMath.degToRad(currentCamera.orientation.y - 90));
-    }
-    if (keys["d"]) {
-        currentCamera.position.x += currentCamera.speed * Math.sin(mygl.MyGLMath.degToRad(currentCamera.orientation.y + 90));
-        currentCamera.position.z -= currentCamera.speed * Math.cos(mygl.MyGLMath.degToRad(currentCamera.orientation.y - 90));
-    }
-    if (keys[" "]) {
-        currentCamera.position.y += currentCamera.speed;
-    }
-    if (keys["Shift"]) {
-        currentCamera.position.y -= currentCamera.speed;
-    }
-    cameraOrientationReassignment();
 }
 
-function cameraOrientationReassignment() {
-    let currentCamera = scene.currentCamera;
+function moveForward() {
+    currentCamera.position.x -= currentCamera.speed * Math.sin(mygl.MyGLMath.degToRad(currentCamera.orientation.y));
+    currentCamera.position.z -= currentCamera.speed * Math.cos(mygl.MyGLMath.degToRad(currentCamera.orientation.y));
+}
 
+function moveBackward() {
+    currentCamera.position.x += currentCamera.speed * Math.sin(mygl.MyGLMath.degToRad(currentCamera.orientation.y));
+    currentCamera.position.z += currentCamera.speed * Math.cos(mygl.MyGLMath.degToRad(currentCamera.orientation.y));
+}
+
+function moveLeft() {
+    currentCamera.position.x -= currentCamera.speed * Math.sin(mygl.MyGLMath.degToRad(currentCamera.orientation.y + 90));
+    currentCamera.position.z += currentCamera.speed * Math.cos(mygl.MyGLMath.degToRad(currentCamera.orientation.y - 90));
+}
+
+function moveRight() {
+    currentCamera.position.x += currentCamera.speed * Math.sin(mygl.MyGLMath.degToRad(currentCamera.orientation.y + 90));
+    currentCamera.position.z -= currentCamera.speed * Math.cos(mygl.MyGLMath.degToRad(currentCamera.orientation.y - 90));
+}
+
+function moveUp() {
+    currentCamera.position.y += currentCamera.speed;
+}
+
+function moveDown() {
+    currentCamera.position.y -= currentCamera.speed;
+}
+
+function handleInputs() {
+    if (keys["w"]) {
+        moveForward();
+    }
+    if (keys["s"]) {
+        moveBackward();
+    }
+    if (keys["a"]) {
+        moveLeft();
+    }
+    if (keys["d"]) {
+        moveRight();
+    }
+    if (keys[" "]) {
+        moveUp();
+    }
+    if (keys["Shift"]) {
+        moveDown();
+    }
+
+    handleGamepadInputs();
+
+    cameraOrientationValueReassignment();
+}
+
+function handleGamepadInputs() {
+    if (gamepadIndex === null) return;
+
+    let gamepad = navigator.getGamepads()[gamepadIndex];
+    if (!gamepad) return;
+
+    const DEAD_ZONE = 0.2; // Dead zone threshold
+
+    // Move the camera with the left stick, applying the dead zone
+    let leftStickX = gamepad.axes[0];
+    let leftStickY = gamepad.axes[1];
+    
+    // Apply dead zone for left stick
+    if (Math.abs(leftStickX) > DEAD_ZONE) {
+        if (leftStickX < -DEAD_ZONE) moveLeft();
+        if (leftStickX > DEAD_ZONE) moveRight();
+    }
+    if (Math.abs(leftStickY) > DEAD_ZONE) {
+        if (leftStickY < -DEAD_ZONE) moveForward();
+        if (leftStickY > DEAD_ZONE) moveBackward();
+    }
+
+    // Move up and down with trigger buttons
+    if (gamepad.buttons[1].pressed) moveDown(); // B
+    if (gamepad.buttons[0].pressed) moveUp();   // A
+
+    // Rotate camera with the right stick, applying the dead zone
+    let rightStickX = gamepad.axes[2];
+    let rightStickY = gamepad.axes[3];
+
+    // Apply dead zone for right stick
+    if (Math.abs(rightStickX) > DEAD_ZONE) {
+        currentCamera.orientation.y -= rightStickX * currentCamera.speed * 50;
+    }
+    if (Math.abs(rightStickY) > DEAD_ZONE) {
+        currentCamera.orientation.x -= rightStickY * currentCamera.speed * 50;
+    }
+
+    cameraClamp();
+}
+
+
+function cameraOrientationValueReassignment() {
     currentCamera.orientation.x %= 360;
     currentCamera.orientation.y %= 360;
     currentCamera.orientation.z %= 360;
@@ -134,11 +211,5 @@ function cameraOrientationReassignment() {
 
 // Assets
 let cube1 = new mygl.Cube(new mygl.Vector3(0, 0, 2), new mygl.Vector3(1, 1, 1));
-
-cube1.act = () => {
-    if (cube1.vertices[0].NDC != null) {
-        console.log(cube1.vertices[0].NDC.z);
-    }
-};
 
 scene.add(cube1);
