@@ -136,13 +136,13 @@ export class Instance {
         });
     }
 
-    showIndices(camera) {
+    showWireframe(camera) {
+        let ctx = camera.canvas.getContext('2d');
+
         for (let i = 0; i < this.indices.length; i++) {
             const index = this.indices[i];
 
             if (index.isReadyForRendering()) {
-                let ctx = camera.canvas.getContext('2d');
-
                 let [x1, y1] = [index.vertex1.vec2Position.x, index.vertex1.vec2Position.y];
                 let [x2, y2] = [index.vertex2.vec2Position.x, index.vertex2.vec2Position.y];
     
@@ -153,6 +153,17 @@ export class Instance {
                 ctx.lineWidth = 1;
                 ctx.strokeStyle = 'black';
                 ctx.stroke();
+            }
+        }
+
+        for (let i = 0; i < this.vertices.length; i++) {
+            const vertex = this.vertices[i];
+
+            if (vertex.isInFrustum()) {
+                ctx.beginPath();
+                ctx.arc(vertex.vec2Position.x, vertex.vec2Position.y, 5, 0, 2 * Math.PI, false);
+                ctx.fillStyle = 'red';
+                ctx.fill();
             }
         }
     }
@@ -185,7 +196,7 @@ export class Camera {
         });
 
         scene.instances.forEach(instance => {
-            instance.showIndices(this);
+            instance.showWireframe(this);
         });
     }
 }
@@ -197,16 +208,13 @@ export class Index {
     }
 
     isReadyForRendering() {
-        return this.vertex1.inFrustum && this.vertex2.inFrustum;
+        return this.vertex1.isInFrustum() && this.vertex2.isInFrustum();
     }
 }
 
 export class Vertex {
     constructor(position) {
         this.vec3 = position;
-        this.NDC = null;
-        this.vec2 = null;
-        this.inFrustum = false;
     }
 
     isInFrustum() {
@@ -248,9 +256,6 @@ export class Vertex {
 
         // Canvas 2D coordinates
         this.vec2Position = new Vector2(canvasX, canvasY);
-
-        // Check if vertex is in camera frustum
-        this.inFrustum = this.isInFrustum();
     }
 }
 
